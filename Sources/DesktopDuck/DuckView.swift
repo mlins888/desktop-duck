@@ -9,6 +9,8 @@ final class DuckModel: ObservableObject {
     @Published var pose: DuckPose = .idle
     @Published var facingRight = true
     @Published var message: String?
+    /// On while the duck is looking at the screen, so it's always obvious.
+    @Published var wearingGlasses = false
 
     // Wired up by DuckController.
     var onTap: () -> Void = {}
@@ -40,6 +42,7 @@ enum DuckParts {
 struct DuckArt: View {
     let pose: DuckPose
     let t: Double
+    var glasses = false
 
     var body: some View {
         let a = Animation(pose: pose, t: t)
@@ -62,6 +65,9 @@ struct DuckArt: View {
                         .part(x: 59, y: 21, w: 23, h: 17)
                     eye(DuckParts.nearEye, closed: a.eyesClosed, x: 50.5, y: 16.5, w: 8, h: 7)
                     eye(DuckParts.farEye, closed: a.eyesClosed, x: 68, y: 17, w: 6, h: 6)
+                    if glasses {
+                        readingGlasses
+                    }
                 }
                 .canvas()
                 .rotationEffect(.degrees(a.headTilt), anchor: UnitPoint(x: 0.55, y: 0.45))
@@ -89,6 +95,15 @@ struct DuckArt: View {
             Capsule().fill(DuckParts.brown).part(x: x, y: y + h / 2, w: w, h: 1.8)
         } else {
             SVGPath(d: d).fill(DuckParts.brown).part(x: x, y: y, w: w, h: h)
+        }
+    }
+
+    private var readingGlasses: some View {
+        ZStack(alignment: .topLeading) {
+            Circle().stroke(DuckParts.brown, lineWidth: 1.3).part(x: 48.5, y: 13.75, w: 12, h: 12)
+            Circle().stroke(DuckParts.brown, lineWidth: 1.3).part(x: 66, y: 15, w: 10, h: 10)
+            Capsule().fill(DuckParts.brown).part(x: 60.5, y: 19, w: 5.5, h: 1.3)
+            Capsule().fill(DuckParts.brown).part(x: 40, y: 18, w: 9, h: 1.3)
         }
     }
 
@@ -170,7 +185,7 @@ struct DuckRootView: View {
                     .transition(.scale(scale: 0.6, anchor: .bottom).combined(with: .opacity))
             }
             TimelineView(.animation) { context in
-                DuckArt(pose: model.pose, t: context.date.timeIntervalSinceReferenceDate)
+                DuckArt(pose: model.pose, t: context.date.timeIntervalSinceReferenceDate, glasses: model.wearingGlasses)
                     .scaleEffect(x: model.facingRight ? 1 : -1)
             }
             .frame(width: DuckParts.size.width, height: DuckParts.size.height)
@@ -219,7 +234,7 @@ struct SpeechBubble: View {
                 .fill(Color.white)
                 .frame(width: 12, height: 7)
         }
-        .frame(maxWidth: 200)
+        .frame(maxWidth: 250)
     }
 }
 

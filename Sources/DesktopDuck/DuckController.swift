@@ -9,6 +9,9 @@ final class DuckController {
     /// Keeps the duck where it is (no wandering) when true.
     var stayPut = false
 
+    /// Called when the duck is double-clicked.
+    var onDoubleTap: () -> Void = {}
+
     private enum Behavior {
         case idle(until: Date)
         case walking(toX: CGFloat)
@@ -21,7 +24,7 @@ final class DuckController {
     private let scale: CGFloat = 1.3
     private let walkSpeed: CGFloat = 45   // points per second
     private let sleepAfter: TimeInterval = 5 * 60
-    private let windowSize = CGSize(width: 220, height: 180)
+    private let windowSize = CGSize(width: 270, height: 240)
 
     private let panel: NSPanel
     private var behavior: Behavior = .idle(until: .now + 2)
@@ -31,6 +34,7 @@ final class DuckController {
     private var timer: Timer?
     private var lastTick = Date.now
     private var messageToken = 0
+    private var pendingTap: Task<Void, Never>?
 
     private var duckSize: CGSize {
         CGSize(width: DuckParts.size.width * scale, height: DuckParts.size.height * scale)
@@ -60,7 +64,7 @@ final class DuckController {
         panel.contentView = hosting
         panel.setContentSize(windowSize)
 
-        model.onTap = { [weak self] in self?.poked() }
+        model.onTap = { [weak self] in self?.tapped() }
         model.onDragChanged = { [weak self] in self?.dragChanged() }
         model.onDragEnded = { [weak self] in self?.dragEnded() }
     }
@@ -83,7 +87,9 @@ final class DuckController {
 
     // MARK: - Things other parts of the app can ask for
 
-    func say(_ text: String, for duration: TimeInterval = 5) {
+    /// Shows a speech bubble. Without a duration, longer lines stay up longer.
+    func say(_ text: String, for duration: TimeInterval? = nil) {
+        let duration = duration ?? max(5, Double(text.count) * 0.09)
         messageToken += 1
         let token = messageToken
         model.message = text
@@ -208,6 +214,22 @@ final class DuckController {
     }
 
     // MARK: - Mouse
+
+    /// Waits briefly after a click to see whether a second one turns it into a double-click.
+    private func tapped() {
+        if let pending = pendingTap {
+            pending.cancel()
+            pendingTap = nil
+            onDoubleTap()
+            return
+        }
+        pendingTap = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .milliseconds(280))
+            guard !Task.isCancelled else { return }
+            self?.pendingTap = nil
+            self?.poked()
+        }
+    }
 
     private func poked() {
         if isAsleep {

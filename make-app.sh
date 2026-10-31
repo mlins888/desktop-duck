@@ -23,8 +23,13 @@ cat > "$APP/Contents/Info.plist" <<'PLIST'
     <key>CFBundleShortVersionString</key><string>0.1</string>
     <key>LSMinimumSystemVersion</key><string>14.0</string>
     <key>LSUIElement</key><true/>
+    <key>NSAppleEventsUsageDescription</key>
+    <string>Desktop Duck checks which website is open so it only looks at your schoolwork.</string>
 </dict>
 </plist>
 PLIST
-codesign --force --sign - "$APP"
+# Sign with your Apple Development certificate when there is one, so macOS keeps the
+# Screen Recording / Automation permissions across rebuilds. Ad hoc otherwise.
+IDENTITY=$(security find-identity -v -p codesigning | sed -n 's/.*"\(Apple Development: .*\)"/\1/p' | head -1)
+codesign --force --sign "${IDENTITY:--}" "$APP"
 echo "Built $APP"
