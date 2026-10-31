@@ -25,6 +25,9 @@ final class DuckController {
 
     private let panel: NSPanel
     private var behavior: Behavior = .idle(until: .now + 2)
+    /// The duck's true position. macOS rounds window origins down to whole points, so reading
+    /// back `panel.frame.origin` loses sub-point walking steps and the duck stalls walking right.
+    private var position = CGPoint.zero
     private var timer: Timer?
     private var lastTick = Date.now
     private var messageToken = 0
@@ -65,7 +68,8 @@ final class DuckController {
     func start() {
         let screen = NSScreen.main ?? NSScreen.screens[0]
         let x = screen.visibleFrame.midX - windowSize.width / 2
-        panel.setFrameOrigin(NSPoint(x: x, y: screen.visibleFrame.minY))
+        position = CGPoint(x: x, y: screen.visibleFrame.minY)
+        panel.setFrameOrigin(position)
         panel.orderFrontRegardless()
 
         lastTick = .now
@@ -113,7 +117,7 @@ final class DuckController {
         let now = Date.now
         let dt = CGFloat(min(now.timeIntervalSince(lastTick), 0.1))
         lastTick = now
-        var origin = panel.frame.origin
+        var origin = position
         let ground = currentScreen.visibleFrame.minY
 
         updateClickThrough()
@@ -159,7 +163,8 @@ final class DuckController {
             }
         }
 
-        if origin != panel.frame.origin {
+        if origin != position {
+            position = origin
             panel.setFrameOrigin(origin)
         }
     }
@@ -215,7 +220,7 @@ final class DuckController {
     private func dragChanged() {
         if case .dragging = behavior { return }
         let mouse = NSEvent.mouseLocation
-        set(.dragging(grab: CGPoint(x: mouse.x - panel.frame.minX, y: mouse.y - panel.frame.minY)))
+        set(.dragging(grab: CGPoint(x: mouse.x - position.x, y: mouse.y - position.y)))
     }
 
     private func dragEnded() {
