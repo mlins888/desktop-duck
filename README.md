@@ -1,0 +1,57 @@
+# Desktop Duck
+
+A little duck that wanders along the bottom of your Mac screen and keeps you company while you work.
+
+## Run it
+
+```sh
+swift run
+```
+
+This needs Xcode's toolchain. If you get an `xcodebuild requires Xcode` error, prefix the command with
+`DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer`, or run `sudo xcode-select -s /Applications/Xcode.app` once.
+
+To get a double-clickable app (and add it to Login Items so it starts with your Mac):
+
+```sh
+./make-app.sh
+open build/DesktopDuck.app
+```
+
+## What it does
+
+- Wanders left and right along the top of the Dock, stops to idle and blink.
+- **Click** it to say hi. **Drag** it anywhere; it falls back down when you let go.
+- Falls asleep after 5 minutes without keyboard/mouse input and wakes up when you're back.
+- Pep talk every 15–30 minutes.
+- Menu bar 🦆:
+  - **Start 25-min focus**: countdown in the menu bar, check-ins every 8 min, cheers when done, then a 5-min break.
+  - **Encourage me**, **Come here** (walks to your cursor), **Stay put**, **Quit**.
+
+No special macOS permissions are needed.
+
+## Where things live
+
+| File | What's in it |
+| --- | --- |
+| `Sources/DesktopDuck/Messages.swift` | Everything the duck says. Edit away. |
+| `Sources/DesktopDuck/DuckView.swift` | The duck art (built from the SVGs in `art/`) and its poses/animation. |
+| `Sources/DesktopDuck/DuckController.swift` | The window, wandering, sleeping, dragging. Timings at the top. |
+| `Sources/DesktopDuck/AppDelegate.swift` | Menu bar item, focus timer, pep talk schedule. |
+
+`swift run DesktopDuck --snapshot <dir>` renders each pose to PNG so you can check the art without launching.
+
+## Swapping in Rive later
+
+The duck is currently drawn and animated in code from your SVG parts, so it works without a `.riv` file.
+`DuckArt` in `DuckView.swift` is the only piece that needs replacing. Everything else just sets
+`model.pose` (`idle`, `walking`, `sleeping`, `cheering`, `held`) and `model.facingRight`.
+
+Plan for the Rive file:
+
+- One artboard facing **right** (the code mirrors it for walking left), transparent background.
+- A state machine (e.g. `Duck`) with inputs that map to the poses, for example:
+  `isWalking` (bool), `isSleeping` (bool), `isHeld` (bool), `cheer` (trigger).
+
+Then add the `RiveRuntime` Swift package and replace `DuckArt` with a `RiveViewModel` view that sets those inputs
+when `model.pose` changes.
