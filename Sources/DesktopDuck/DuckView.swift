@@ -25,7 +25,8 @@ enum DuckParts {
     static let bodyShade = "M78.8636 -2.85436C78.8636 8.74362 94.8419 22.1841 58.0919 23.7995C46.6201 23.7995 37.3203 14.3975 37.3203 2.79948C37.3203 -8.7985 46.6201 -18.2005 58.0919 -18.2005C69.5638 -18.2005 78.8636 -14.4523 78.8636 -2.85436Z"
     static let head = "M41.5434 15.3462C41.5434 26.9441 57.5216 40.3846 20.7717 42C9.2998 42 0 32.598 0 21C0 9.40202 9.2998 0 20.7717 0C32.2436 0 41.5434 3.74817 41.5434 15.3462Z"
     static let beak = "M21.1766 8.38877L5.81368 0.339468C4.65899 -0.265525 3.21637 -0.0718008 2.47518 1.00056C-1.4094 6.62075 -1.20655 16.0057 6.59515 16.3077C12.6537 16.5421 17.57 14.2279 21.1532 12.3421C22.6606 11.5487 22.6854 9.17933 21.1766 8.38877Z"
-    static let eye = "M8 4C8 6.20914 6.20914 6.5 4 6.5C1.79086 6.5 0 6.20914 0 4C0 1.79086 1.79086 0 4 0C6.20914 0 8 1.79086 8 4Z"
+    static let nearEye = "M8 4C8 6.20914 6.20914 6.5 4 6.5C1.79086 6.5 0 6.20914 0 4C0 1.79086 1.79086 0 4 0C6.20914 0 8 1.79086 8 4Z"
+    static let farEye = "M6 4C6 6.20914 4.65685 6 3 6C1.34315 6 0 6.20914 0 4C0 1.79086 1.34315 0 3 0C4.65685 0 6 1.79086 6 4Z"
 
     static let yellow = Color(red: 1.0, green: 0.922, blue: 0.580)       // #FFEB94
     static let shade = Color(red: 0.925, green: 0.804, blue: 0.529)      // #ECCD87
@@ -44,22 +45,23 @@ struct DuckArt: View {
         let a = Animation(pose: pose, t: t)
         ZStack(alignment: .topLeading) {
             Ellipse().fill(DuckParts.darkOrange)
-                .part(x: 12 + a.backFootX, y: 69 + a.backFootY, w: 20, h: 8)
+                .part(x: 21 + a.backFootX, y: 70 + a.backFootY, w: 20, h: 8)
 
             ZStack(alignment: .topLeading) {
                 SVGPath(d: DuckParts.body).fill(DuckParts.yellow)
-                    .part(x: 0, y: 24, w: 70, h: 48)
+                    .part(x: 0, y: 26, w: 70, h: 48)
                 SVGPath(d: DuckParts.bodyShade).fill(DuckParts.shade)
                     .frame(width: 70, height: 48)
                     .mask(SVGPath(d: DuckParts.body))
-                    .offset(x: 0, y: 24)
+                    .offset(x: 0, y: 26)
 
                 ZStack(alignment: .topLeading) {
                     SVGPath(d: DuckParts.head).fill(DuckParts.yellow)
-                        .part(x: 37, y: 0, w: 45, h: 42)
+                        .part(x: 33, y: 0, w: 45, h: 42)
                     SVGPath(d: DuckParts.beak).fill(DuckParts.orange)
-                        .part(x: 63, y: 21, w: 23, h: 17)
-                    eye(closed: a.eyesClosed)
+                        .part(x: 59, y: 21, w: 23, h: 17)
+                    eye(DuckParts.nearEye, closed: a.eyesClosed, x: 50.5, y: 16.5, w: 8, h: 7)
+                    eye(DuckParts.farEye, closed: a.eyesClosed, x: 68, y: 17, w: 6, h: 6)
                 }
                 .canvas()
                 .rotationEffect(.degrees(a.headTilt), anchor: UnitPoint(x: 0.55, y: 0.45))
@@ -71,7 +73,7 @@ struct DuckArt: View {
             .offset(y: a.bob)
 
             Ellipse().fill(DuckParts.orange)
-                .part(x: 28 + a.frontFootX, y: 70 + a.frontFootY, w: 18, h: 8)
+                .part(x: 38 + a.frontFootX, y: 70 + a.frontFootY, w: 18, h: 8)
 
             if pose == .sleeping {
                 zzz
@@ -82,11 +84,11 @@ struct DuckArt: View {
     }
 
     @ViewBuilder
-    private func eye(closed: Bool) -> some View {
+    private func eye(_ d: String, closed: Bool, x: CGFloat, y: CGFloat, w: CGFloat, h: CGFloat) -> some View {
         if closed {
-            Capsule().fill(DuckParts.brown).part(x: 45, y: 17, w: 8, h: 1.8)
+            Capsule().fill(DuckParts.brown).part(x: x, y: y + h / 2, w: w, h: 1.8)
         } else {
-            SVGPath(d: DuckParts.eye).fill(DuckParts.brown).part(x: 45, y: 14, w: 8, h: 7)
+            SVGPath(d: d).fill(DuckParts.brown).part(x: x, y: y, w: w, h: h)
         }
     }
 

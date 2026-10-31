@@ -47,7 +47,15 @@ final class DuckController {
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary, .ignoresCycle]
         panel.hidesOnDeactivate = false
         panel.isMovable = false
-        panel.contentView = NSHostingView(rootView: DuckRootView(model: model, scale: scale))
+        // Fixed size: by default the hosting view resizes the window to fit its content,
+        // which pushed the duck (at the window's bottom edge) off the screen.
+        let hosting = NSHostingView(
+            rootView: DuckRootView(model: model, scale: scale)
+                .frame(width: windowSize.width, height: windowSize.height)
+        )
+        hosting.sizingOptions = []
+        panel.contentView = hosting
+        panel.setContentSize(windowSize)
 
         model.onTap = { [weak self] in self?.poked() }
         model.onDragChanged = { [weak self] in self?.dragChanged() }
@@ -132,8 +140,14 @@ final class DuckController {
             break
 
         case .dragging(let grab):
-            let mouse = NSEvent.mouseLocation
-            origin = NSPoint(x: mouse.x - grab.x, y: mouse.y - grab.y)
+            // SwiftUI can miss the mouse-up once the window moves under the cursor,
+            // so check the button directly.
+            if NSEvent.pressedMouseButtons & 1 == 0 {
+                dragEnded()
+            } else {
+                let mouse = NSEvent.mouseLocation
+                origin = NSPoint(x: mouse.x - grab.x, y: mouse.y - grab.y)
+            }
 
         case .falling(var vy):
             vy -= 2000 * dt
